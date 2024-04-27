@@ -51,7 +51,7 @@ class PointTesting():
         self.point = meshbox.complex_centre
         self.potentials = []
 
-    def test(self):
+    def test_mpe(self):
         for particle in self.particles:
             z = abs(particle.complex_position - self.point)
             if z > self.r:
@@ -79,12 +79,12 @@ class PointTesting():
         fig.colorbar(cntr, ax=ax)
         print(min(potentials))
     
-    def plot_difference(self, other_particles):
+    def plot_difference(self, particles, other_particles):
         xs = []
         ys = []
         potential_differences = []
         is_bad = []
-        for i, particle in enumerate(self.particles):
+        for i, particle in enumerate(particles):
             position = particle.position
             z = abs(particle.complex_position - self.meshbox.complex_centre)
             xs.append(position[0])
@@ -101,9 +101,9 @@ class PointTesting():
         #mask = np.all(np.where(is_bad[triang.triangles], True, False), axis=1)
         #triang.set_mask(mask)
         fig, ax = plt.subplots()
-        levels = np.linspace(-10,0,1000)
-        cntr = ax.tricontourf(triang, potential_differences, levels=levels, cmap='RdBu_r')
-        ax.tricontour(triang, potential_differences, levels=4, colors='k')
+        #levels = np.linspace(-10,0,1000)
+        cntr = ax.tricontourf(triang, potential_differences, levels=1000, cmap='RdBu_r')
+        #ax.tricontour(triang, potential_differences, levels=4, colors='k')
         fig.colorbar(cntr, ax=ax)
         non_zero_pds = potential_differences[potential_differences != 0]
         print(np.max(non_zero_pds))

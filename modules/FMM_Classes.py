@@ -204,14 +204,15 @@ class MeshBox():
             for k in range(1, self.mesh.expansion_order+1):
                 b_0 += i_box.mpe_coefficients[k]/(z_0**k) * (-1)**k
             b_0 += i_box.mpe_coefficients[0] * (np.log(z_0))
-            le_coeffs[0] += b_0
+            le_coeffs[0] += b_0 ## TESTING MEASURE
             for l in range(1, self.mesh.expansion_order+1):
                 b_l = 0
                 for k in range(1,self.mesh.expansion_order+1):
                     #print(l, k)
                     b_l += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * math.comb(l+k-1, k-1) * ((-1)**k)
                 b_l -= i_box.mpe_coefficients[0]/(l*(z_0**l))
-                le_coeffs[l] += b_l
+                #if l ==1: 
+                le_coeffs[l] += b_l ##TESTING MEASURE
         self.le_coeffs = le_coeffs
         #print("local", self.level, self.level_coords, self.centre)
         #print(le_coeffs)
@@ -252,7 +253,7 @@ class MeshBox():
             for neighbour_particle in interaction_particles:
                 if neighbour_particle != box_particle:
                     particle_neighbour_potential += neighbour_particle.property * np.real(-np.log(box_particle.complex_position - neighbour_particle.complex_position))
-            box_particle.neighbour_potential = particle_neighbour_potential
+            box_particle.neighbour_potential = particle_neighbour_potential#*0 ##TESTING MEASURE
             box_particle.total_potential = box_particle.neighbour_potential + box_particle.le_potential
             box_particle.real_potential = box_particle.total_potential
 
