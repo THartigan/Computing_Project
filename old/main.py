@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from modules.Particle import Particle
-from modules.Analytic_Classes import Analytic
+from modules.Direct_Classes import Analytic
 from modules.FMM_Classes import FMM
 import copy
 from modules.testing import PointTesting
