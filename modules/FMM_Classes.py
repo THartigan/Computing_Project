@@ -66,10 +66,10 @@ class Mesh():
             print("local expansion level: ", level)
             for meshbox in list(np.concatenate(self.meshboxes[level]).flat):
                 meshbox.calc_local_expansion()
-            if level < self.n_levels +1:
-                for meshbox in list(np.concatenate(self.meshboxes[level]).flat):
-                    meshbox.translate_le_to_children()
-    
+        for level in range(1, self.n_levels): # From 1...n-1
+            for meshbox in list(np.concatenate(self.meshboxes[level]).flat):
+                meshbox.translate_le_to_children()
+
     def calc_le_particle_potentials(self):
         for meshbox in list(np.concatenate(self.meshboxes[self.n_levels]).flat):
             meshbox.evaluate_particle_les()
@@ -78,16 +78,27 @@ class Mesh():
         for meshbox in list(np.concatenate(self.meshboxes[self.n_levels]).flat):
             meshbox.evaluate_neighbour_potentials()
     
-    def plot_potential(self):
+    def plot_potential(self, plot_range = [0,0]):
         xs = []
         ys = []
         potentials = []
         for particle in self.meshboxes[0][0][0].particles:
             position = particle.position
-            xs.append(position[0])
-            ys.append(position[1])
-            potentials.append(particle.total_potential)
+            if particle.total_potential != 0:
+                xs.append(position[0])
+                ys.append(position[1])
+                potentials.append(particle.total_potential)
         fig, ax = plt.subplots()
+
+        potential_differences = np.nan_to_num(potential_differences)
+        print(max(potential_differences))
+        print(min(potential_differences))
+        #potential_differences[abs(potential_differences) > 1E5] = 0
+        if plot_range[0] != 0 or plot_range[1] != 0:
+            levels = np.linspace(plot_range[0], plot_range[1], 1000)
+        else:
+            levels = 1000
+        
         ax.tricontour(xs, ys, potentials, levels=[0], colors='k')
         cntr = ax.tricontourf(xs, ys, potentials, levels=1000, cmap="RdBu_r")
         # ax.set_xlim([0,200])
@@ -110,6 +121,7 @@ class MeshBox():
         self.complex_centre = self.centre[0] + 1j*self.centre[1]
         self.i_list : List[MeshBox] = []
         self.neighbours = []
+        self.psi_tilda_coeffs = np.zeros(self.mesh.expansion_order+1)
     
     def allocate_neighbours(self):
         neighbour_list = []
@@ -140,7 +152,7 @@ class MeshBox():
         return self.property_total
     
     def calc_fine_mpe(self): # 100% Working
-        coefficients = [self.calculate_total_property()]
+        coefficients = [self.calculate_total_property()] ## ADDED MINUS HERE
         if self.mesh.expansion_order < 0:
             raise Exception("For multipole expansion, p must be greater than 0")
         for exponent in range(1, self.mesh.expansion_order+1):
@@ -191,44 +203,96 @@ class MeshBox():
         #print(shift_coeffs)
 
     def calc_local_expansion(self):
-        if self.level == 1:
-            le_coeffs = np.zeros(self.mesh.expansion_order+1) # Local expansion coefficients
-        else:
-            le_coeffs = self.le_coeffs
-            #print("Starting with old", le_coeffs)
-
+        psi_coeffs = np.zeros(self.mesh.expansion_order+1)
+        p = self.mesh.expansion_order
+        # Evaluate psi for the only box at level 0 for periodic boundary conditions
+        # if self.level == 0:
+        #     for m in range(1,p+1):
+        #         for k in range(1, p+1):
+        #             psi_coeffs += 1/
+        psi_coeffs = np.zeros(self.mesh.expansion_order+1)
+        p = self.mesh.expansion_order
+        
         for i_box in self.i_list:
             z_0 = abs(i_box.complex_centre - self.complex_centre)
+
             # Calculating b_0
-            b_0 = 0
-            for k in range(1, self.mesh.expansion_order+1):
-                b_0 += i_box.mpe_coefficients[k]/(z_0**k) * (-1)**k
-            b_0 += i_box.mpe_coefficients[0] * (np.log(z_0))
-            le_coeffs[0] += b_0 ## TESTING MEASURE
-            for l in range(1, self.mesh.expansion_order+1):
-                b_l = 0
-                for k in range(1,self.mesh.expansion_order+1):
-                    #print(l, k)
-                    b_l += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * math.comb(l+k-1, k-1) * ((-1)**k)
-                b_l -= i_box.mpe_coefficients[0]/(l*(z_0**l))
-                #if l ==1: 
-                le_coeffs[l] += b_l ##TESTING MEASURE
-        self.le_coeffs = le_coeffs
+            for k in range(1, p +1):
+                psi_coeffs[0] += i_box.mpe_coefficients[k] / (z_0 ** k) * ((-1)**k)
+            psi_coeffs[0] += i_box.mpe_coefficients[0] * np.log(z_0)
+
+            # Calculating b_l
+            for l in range(1, p+1):
+                for k in range(1, p+1):
+                    psi_coeffs[l] += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * math.comb(l+k-1, k-1) * ((-1)**k)
+                psi_coeffs[l] += -i_box.mpe_coefficients[0] / (l*(z_0**l))
+
+        self.psi_coeffs = psi_coeffs
+        print("local expansion psi", self.level, self.level_coords, psi_coeffs)
+        print("local expansion interaction boxes", self.i_list)
+
+        # Adding psi to psi_tilda, unless at level 1 in which case, this is the starting expansion
+        if self.level == 1:
+            self.psi_tilda_coeffs = psi_coeffs
+        else:
+            self.psi_tilda_coeffs += psi_coeffs
+
+        # if self.level == 1:
+        #     psi_tilda = np.zeros(self.mesh.expansion_order+1) # Local expansion coefficients
+        # else:
+        #     psi_tilda = self.total_le_coeffs 
+        
+
+
+        # if self.level == 1:
+        #     psi_tilda = np.zeros(self.mesh.expansion_order+1) # Local expansion coefficients
+        # else:
+        #     psi_tilda = self.total_le_coeffs
+        #     #print("Starting with old", total_le_coeffs)
+
+        # psi_meshbox_level = np.zeros(self.mesh.expansion_order+1)
+        # for i_box in self.i_list:
+        #     z_0 = abs(i_box.complex_centre - self.complex_centre)
+        #     # Calculating b_0
+        #     b_0 = 0
+        #     for k in range(1, self.mesh.expansion_order+1):
+        #         b_0 += i_box.mpe_coefficients[k]/(z_0**k) * (-1)**k
+        #     b_0 += i_box.mpe_coefficients[0] * (np.log(z_0))
+        #     psi_meshbox_level[0] += b_0 ## TESTING MEASURE
+        #     for l in range(1, self.mesh.expansion_order+1):
+        #         b_l = 0
+        #         for k in range(1,self.mesh.expansion_order+1):
+        #             #print(l, k)
+        #             b_l += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * math.comb(l+k-1, k-1) * ((-1)**k)
+        #         b_l -= i_box.mpe_coefficients[0]/(l*(z_0**l))
+        #         #if l ==1: 
+        #         psi_meshbox_level[l] += b_l ##TESTING MEASURE
+        # self.total_le_coeffs = psi_tilda + psi_meshbox_level # This being too small would explain lack of secondary circles
+        # self.level_le_coeffs = psi_meshbox_level
+
+
         #print("local", self.level, self.level_coords, self.centre)
-        #print(le_coeffs)
-        #print(le_coeffs)
+        #print(total_le_coeffs)
+        #print(total_le_coeffs)
         #print(self.level)
-        #print(le_coeffs)
+        #print(total_le_coeffs)
     
     def translate_le_to_children(self):
+        p = self.mesh.expansion_order
+        print("parent", self.level, self.level_coords, self.psi_tilda_coeffs)
         for child_box in self.children:
+            
             z_0 = child_box.complex_centre - self.complex_centre
-            child_le_coeffs = np.zeros(self.mesh.expansion_order+1)
-            for l in range(0, self.mesh.expansion_order+1):
-                for k in range(l, self.mesh.expansion_order+1):
-                    child_le_coeffs[l] += self.le_coeffs[k] * math.comb(k,l) * (abs(z_0))**(k-l)
-            child_box.le_coeffs = child_le_coeffs
-            #print(child_le_coeffs)
+            child_psi_tilda_coeffs = np.zeros(self.mesh.expansion_order+1)
+            for l in range(0, p+1):
+                for k in range(l, p+1):
+                    child_psi_tilda_coeffs[l] += self.psi_tilda_coeffs[k] * math.comb(k, l) * (abs(z_0) **(k-l))
+                    # child_total_le_coeffs[l] += self.level_le_coeffs[k] * math.comb(k,l) * (abs(z_0))**(k-l)
+            print("child shifted coeffs", child_box.level_coords, child_psi_tilda_coeffs)
+            child_box.psi_tilda_coeffs += child_psi_tilda_coeffs
+            
+            #child_box.total_le_coeffs = child_total_le_coeffs
+            #print(child_total_le_coeffs)
 
     def evaluate_particle_les(self):
         for particle in self.particles:
@@ -238,7 +302,7 @@ class MeshBox():
         le_potential = 0
         z = particle.complex_position - self.complex_centre
         for l in range(0, self.mesh.expansion_order+1):
-            le_potential += self.le_coeffs[l] * abs(z)**l
+            le_potential += self.psi_tilda_coeffs[l] * abs(z)**l
         #print(le_potential)
         return -le_potential
     
@@ -258,12 +322,15 @@ class MeshBox():
             box_particle.real_potential = box_particle.total_potential
 
 class FMM():
-    def __init__(self, box_size, precision, particles) -> None:
+    def __init__(self, box_size, expansion_order, particles, n_levels=0) -> None:
         self.n_particles = len(particles)
         self.particles = particles
         self.box_size = box_size
-        self.n_levels = int(np.ceil(np.emath.logn(4, self.n_particles)))
-        self.p = int(np.ceil(np.log2(precision)))
+        if n_levels == 0:
+            self.n_levels = int(np.ceil(np.emath.logn(4, self.n_particles)))
+        else:
+            self.n_levels = n_levels
+        self.p = expansion_order #int(np.ceil(np.log2(precision)))
         self.mesh = None
 
     def run(self):
