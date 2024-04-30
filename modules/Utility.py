@@ -88,7 +88,7 @@ def analyse(xs, ys, potentials, plotting, fig, ax, z_range, z_levels, x_range, y
         if title != "":
             ax.set_title(title)
         plt.ion()
-    
+
     return Results(np.max(potentials), np.min(potentials), np.mean(potentials), np.median(potentials), fig, ax)
 
 class Results():

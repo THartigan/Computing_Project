@@ -17,4 +17,4 @@ class PointTesting():
             for k in range(1, len(self.coefficients)):
                 particle.total_potential += self.coefficients[k] / (z ** k)
 
-            particle.total_potential = -np.real(particle.total_potential)
+            particle.total_potential = -(np.real(particle.total_potential))
