@@ -3,6 +3,7 @@ import math
 from typing import List
 import matplotlib.pyplot as plt
 import copy
+import modules.Utility as util
 
 class Particle():
     def __init__(self, position, property):
@@ -17,8 +18,7 @@ class Mesh():
         self.width = width
         self.n_levels = n_levels
         self.expansion_order = expansion_order
-        # A 3D array indexed [level][i][j]
-        self.meshboxes = []
+        self.meshboxes = [] # Will for a 3D array indexed [level][i][j]
         self.initialise_mesh()
     
     def initialise_mesh(self):
@@ -98,18 +98,18 @@ class MeshBox():
         self.complex_centre = self.centre[0] + 1j*self.centre[1]
         self.i_list : List[MeshBox] = []
         self.neighbours = []
-        self.total_le_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+        self.total_le_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex256')
     
     def allocate_neighbours(self):
         neighbour_list = []
-        neighbour_coords = []
+        # neighbour_coords = []
         for i in range(-1,2):
             for j in range(-1,2):
                 neighbour_coords = [self.level_coords[0]+i, self.level_coords[1]+j]
-                interaction_coords = np.mod(neighbour_coords, (2**self.level))
-                print(interaction_coords)
+                # interaction_coords = np.mod(neighbour_coords, (2**self.level))
+                # print(interaction_coords)
                 if self.level_coords[0]+i > -1 and self.level_coords[1]+j > -1 and self.level_coords[0]+i < 2**self.level and self.level_coords[1]+j < 2**self.level:
-                    print("Adding normal neighbour")
+                    # print("Adding normal neighbour")
                     neighbour_list.append(self.mesh.meshboxes[self.level][self.level_coords[0]+i][self.level_coords[1]+j])
                 # else:
                 #     print("Adding looped neighbour")
@@ -126,7 +126,7 @@ class MeshBox():
             neighbour_list.remove(self)
         #neighbour_list.remove(self)
         self.neighbours = neighbour_list
-        print(len(self.neighbours))
+        # print(len(self.neighbours))
     
     def calc_i_list(self):
         i_list = [] # Interaction list
@@ -137,7 +137,7 @@ class MeshBox():
                 if own_neighbour in i_list:
                     i_list.remove(own_neighbour)
             self.i_list = i_list
-            print(self.level, self.level_coords, len(i_list))
+            # print(self.level, self.level_coords, len(i_list))
     
     def add_particle(self, particle: Particle):
         self.particles.append(particle)
@@ -168,7 +168,7 @@ class MeshBox():
            # print(self)
     
     def calc_coarse_mpe(self):
-        shift_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+        shift_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex256')
         for child_meshbox in self.children:
             child_coeffs = child_meshbox.mpe_coefficients
             # Initialise the array and include the (unchanged) a_0
@@ -190,10 +190,10 @@ class MeshBox():
             #print(len(child_shift_coeffs))
             shift_coeffs += child_shift_coeffs
         self.mpe_coefficients = shift_coeffs
-        if self.mpe_coefficients[0] != 0:
-            print("coarse", self.level, self.level_coords, self.centre)
-            print(self.mpe_coefficients)
-            print(self)
+        # if self.mpe_coefficients[0] != 0:
+        #     print("coarse", self.level, self.level_coords, self.centre)
+        #     print(self.mpe_coefficients)
+        #     print(self)
         
         #print(shift_coeffs)
         #print(shift_coeffs)
@@ -202,11 +202,11 @@ class MeshBox():
     def calc_local_expansion(self):
         # Evaluate psi for the only box at level 0 for periodic boundary conditions
         # n_surround = 10 # Number of boxes around to evaluate for the central potential
-        self.le_coeffs_from_iboxes = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+        self.le_coeffs_from_iboxes = np.zeros(self.mesh.expansion_order+1, dtype='complex256')
         p = self.mesh.expansion_order
         
         for i_box in self.i_list:
-            le_coeffs_from_i_box = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+            le_coeffs_from_i_box = np.zeros(self.mesh.expansion_order+1, dtype='complex256')
             z_0 = (i_box.complex_centre - self.complex_centre)
 
             # Calculating b_0
@@ -217,7 +217,7 @@ class MeshBox():
             # Calculating b_l
             for l in range(1, p+1):
                 for k in range(1, p+1):
-                    le_coeffs_from_i_box[l] += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * math.comb(l+k-1, k-1) * ((-1)**k)
+                    le_coeffs_from_i_box[l] += 1/(z_0**l) * i_box.mpe_coefficients[k] / (z_0**k) * np.clongdouble(math.comb(l+k-1, k-1) * ((-1)**k))
                 le_coeffs_from_i_box[l] += -i_box.mpe_coefficients[0] / (l*(z_0**l))
 
             self.le_coeffs_from_iboxes += le_coeffs_from_i_box
@@ -235,7 +235,7 @@ class MeshBox():
         #print("parent", self.level, self.level_coords, self.psi_parent_coeffs)
         for child_box in self.children:
             z_0 = child_box.complex_centre - self.complex_centre
-            child_le_coeffs_from_parent = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+            child_le_coeffs_from_parent = np.zeros(self.mesh.expansion_order+1, dtype='complex256')
             for l in range(0, p+1):
                 for k in range(l, p+1):
                     child_le_coeffs_from_parent[l] += self.total_le_coeffs[k] * math.comb(k, l) * ((z_0) **(k-l)) #Possibly need an extra - here
@@ -274,7 +274,7 @@ class MeshBox():
             #box_particle.real_potential = box_particle.total_potential
 
 class FMM():
-    def __init__(self, box_size, expansion_order, particles, n_levels=0) -> None:
+    def __init__(self, box_size, particles, n_levels=0, precision=None, p=None) -> None:
         self.n_particles = len(particles)
         self.particles = particles
         self.box_size = box_size
@@ -282,10 +282,20 @@ class FMM():
             self.n_levels = int(np.ceil(np.emath.logn(4, self.n_particles)))
         else:
             self.n_levels = n_levels
-        self.p = expansion_order #int(np.ceil(np.log2(precision)))
+        if p == None and precision == None:
+            raise Exception("Either p or precision must be specified")
+        
+        if p == None: # If precision is specified
+            self.p = int(np.ceil(np.log2(precision)))
+            self.expected_precision = precision
+        else: # If p is specified
+            self.p = p
+            self.expected_precision = 2 ** (-p)
+        self.log_10_expected_precision = np.log10(self.expected_precision)
+
         self.mesh = None
 
-    def run(self):
+    def run(self, plotting = True, fig = None, ax = None, z_range = [None, None], z_levels = 1000, x_range = [None, None], y_range = [None, None], cmap = 'RdBu_r'):
         self.mesh = Mesh(self.box_size, self.n_levels, self.p)
         for particle in self.particles:
             self.mesh.add_particle(particle)
@@ -300,6 +310,7 @@ class FMM():
         self.mesh.calc_le_particle_potentials() # Step 5
         print(5)
         self.mesh.calc_neighbour_particle_potentials() # Step 6 and 7
+        return util.calc_potential_results(self.particles, plotting, fig, ax, z_range, z_levels, x_range, y_range, cmap)
     
     def plot_potential(self):
         self.mesh.plot_potential()

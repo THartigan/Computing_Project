@@ -10,10 +10,10 @@ class SingleParticle():
     
     def evaluate_particle_potentials(self, particles):
         for particle in particles:
-            particle.total_potential = -self.property * np.log(abs(particle.complex_position - self.complex_position))
+            particle.total_potential = -self.property * np.log(np.clongdouble(abs(particle.complex_position - self.complex_position)))
 
     def evaluate_position_potential(self, x, y):
-        return -self.property * np.log(abs(x + 1j*y - self.complex_position))
+        return -self.property * np.log(np.clongdouble(abs(x + 1j*y - self.complex_position)))
     
     def plot_potential(self):
         n = 100
