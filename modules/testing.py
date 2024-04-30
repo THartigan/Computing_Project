@@ -54,8 +54,8 @@ class PointTesting():
 
     def test_mpe(self):
         for particle in self.particles:
-            z = abs(particle.complex_position - self.point)
-            if z > self.r:
+            z = (particle.complex_position - self.point)
+            if abs(z) > self.r:
                 particle.total_potential = self.coefficients[0]*np.log(z)
                 
                 #local_coeffs.remove(local_coeffs[0])
@@ -64,7 +64,7 @@ class PointTesting():
                 for k in range(1, len(self.coefficients)):
                     particle.total_potential += self.coefficients[k] / (z ** k)
 
-                particle.total_potential = -particle.total_potential
+                particle.total_potential = -np.real(particle.total_potential)
                 # for i, coeff in enumerate(local_coeffs):
                 #     particle.total_potential += coeff / (z**(i+1))
             #self.potentials.append(particle.total_potential)

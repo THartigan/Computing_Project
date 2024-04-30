@@ -98,7 +98,7 @@ class MeshBox():
         self.complex_centre = self.centre[0] + 1j*self.centre[1]
         self.i_list : List[MeshBox] = []
         self.neighbours = []
-        self.total_le_coeffs = np.zeros(self.mesh.expansion_order+1)
+        self.total_le_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
     
     def allocate_neighbours(self):
         neighbour_list = []
@@ -155,7 +155,7 @@ class MeshBox():
         for exponent in range(1, self.mesh.expansion_order+1):
             coefficient = 0
             for particle in self.particles:
-                coefficient += -particle.property * ((abs(particle.complex_position - self.complex_centre)) ** exponent) / exponent
+                coefficient += -particle.property * ((particle.complex_position - self.complex_centre) ** exponent) / exponent
                 #print((particle.complex_position - self.complex_centre))
                 #print(f'particle {particle.complex_position}')
                 #print(f'box {self.complex_centre}')
@@ -168,7 +168,7 @@ class MeshBox():
            # print(self)
     
     def calc_coarse_mpe(self):
-        shift_coeffs = np.zeros(self.mesh.expansion_order+1)
+        shift_coeffs = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
         for child_meshbox in self.children:
             child_coeffs = child_meshbox.mpe_coefficients
             # Initialise the array and include the (unchanged) a_0
@@ -178,7 +178,7 @@ class MeshBox():
             for shift_exponent in range(1, self.mesh.expansion_order + 1):
                 child_shift_coeff = 0
                 for k in range(1, shift_exponent+1):
-                    z_0 = abs(child_meshbox.complex_centre - self.complex_centre)
+                    z_0 = (child_meshbox.complex_centre - self.complex_centre)
                     child_shift_coeff += child_coeffs[k] * (z_0) ** (shift_exponent-k) * math.comb(shift_exponent-1, k-1)
                 #print(child_shift_coeff)
                 child_shift_coeff += (-child_coeffs[0] * (z_0 ** shift_exponent)) / shift_exponent
@@ -202,12 +202,12 @@ class MeshBox():
     def calc_local_expansion(self):
         # Evaluate psi for the only box at level 0 for periodic boundary conditions
         # n_surround = 10 # Number of boxes around to evaluate for the central potential
-        self.le_coeffs_from_iboxes = np.zeros(self.mesh.expansion_order+1)
+        self.le_coeffs_from_iboxes = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
         p = self.mesh.expansion_order
         
         for i_box in self.i_list:
-            le_coeffs_from_i_box = np.zeros(self.mesh.expansion_order+1)
-            z_0 = abs(i_box.complex_centre - self.complex_centre)
+            le_coeffs_from_i_box = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
+            z_0 = (i_box.complex_centre - self.complex_centre)
 
             # Calculating b_0
             for k in range(1, p +1):
@@ -235,10 +235,10 @@ class MeshBox():
         #print("parent", self.level, self.level_coords, self.psi_parent_coeffs)
         for child_box in self.children:
             z_0 = child_box.complex_centre - self.complex_centre
-            child_le_coeffs_from_parent = np.zeros(self.mesh.expansion_order+1)
+            child_le_coeffs_from_parent = np.zeros(self.mesh.expansion_order+1, dtype='complex128')
             for l in range(0, p+1):
                 for k in range(l, p+1):
-                    child_le_coeffs_from_parent[l] += self.total_le_coeffs[k] * math.comb(k, l) * (abs(z_0) **(k-l))
+                    child_le_coeffs_from_parent[l] += self.total_le_coeffs[k] * math.comb(k, l) * ((z_0) **(k-l)) #Possibly need an extra - here
             #print("le coeffs from parent", child_box.level_coords, child_le_coeffs_from_parent)
             child_box.total_le_coeffs += child_le_coeffs_from_parent
             #print("expansion after parent shift", child_box.level, child_box.level_coords, child_box.total_le_coeffs)
@@ -254,7 +254,7 @@ class MeshBox():
         le_potential = 0
         z = particle.complex_position - self.complex_centre
         for l in range(0, self.mesh.expansion_order+1):
-            le_potential += self.total_le_coeffs[l] * abs(z)**l
+            le_potential += np.real(self.total_le_coeffs[l] * (z)**l)
         #print(le_potential)
         return -le_potential
     
