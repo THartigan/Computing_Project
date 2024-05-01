@@ -11,7 +11,12 @@ class SingleParticle():
     def evaluate_particle_potentials(self, particles):
         for particle in particles:
             particle.total_potential = -(self.property * np.log(np.complex256(abs(particle.complex_position - self.complex_position))))
-            np.complex
+    
+    def evaluate_particle_acceleration(self, particles):
+        for particle in particles:
+            delta_positions = self.position - particle.position
+            direction = (delta_positions)/np.linalg.norm(delta_positions)
+            particle.acceleration = self.property / (np.linalg.norm(delta_positions) ** 2) * direction
 
     def evaluate_position_potential(self, x, y):
         return -self.property * np.log(np.clongdouble(abs(x + 1j*y - self.complex_position)))
@@ -36,4 +41,3 @@ class SingleParticle():
         cbar.ax.set_ylabel("Potential", rotation=270)
         ax.set_xlabel("x")
         ax.set_ylabel("y")
-    
