@@ -1,5 +1,6 @@
 import numpy as np
 from modules.Particle import Particle
+import modules.Utility as util
 
 class BH():
     def __init__(self, box_size, initial_particles, theta=1):
@@ -8,10 +9,11 @@ class BH():
         self.theta = theta
         self.system = System(initial_particles, box_size, theta)
     
-    def run(self):
+    def run(self, centre_position, plotting = True, fig = None, ax = None, scatter = False, marker_size = 1, x_range = [None, None], y_range = [None, None], x_label = "x", y_label ="y", title = "", label = "", format = "", legend = False):
         self.system.generate_tree_and_place_particles()
         self.system.calculate_box_masses()
         self.system.calculate_particle_accelerations()
+        return util.calc_3D_results(self.particles, centre_position, plotting, fig, ax, scatter, marker_size, x_range, y_range, x_label, y_label, title, label, format, legend)
 
 
 class System():

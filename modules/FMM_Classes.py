@@ -53,7 +53,7 @@ class Mesh():
     
     def calc_coarse_mpes(self):
         for level in reversed(range(0, self.n_levels)):
-            print("coarse level: ", level)
+            #print("coarse level: ", level)
             for meshbox in list(np.concatenate(self.meshboxes[level]).flat):
                 meshbox.calc_coarse_mpe()
     
@@ -67,7 +67,7 @@ class Mesh():
                     self.meshboxes[level][i][j].calc_i_list()
 
         for level in range(1, self.n_levels+1): # From 1...n-1
-            print("local expansion level: ", level)
+            #print("local expansion level: ", level)
             for meshbox in list(np.concatenate(self.meshboxes[level]).flat):
                 meshbox.calc_local_expansion()
             if level != self.n_levels:
@@ -300,15 +300,15 @@ class FMM():
         for particle in self.particles:
             self.mesh.add_particle(particle)
 
-        print(1)
+        #print(1)
         self.mesh.calc_fine_mpes() # Step 1
-        print(2)
+        #print(2)
         self.mesh.calc_coarse_mpes() # Step 2
-        print(3)
+        #print(3)
         self.mesh.calc_local_expansions() # Step 3 and 4
-        print(4)
+        #print(4)
         self.mesh.calc_le_particle_potentials() # Step 5
-        print(5)
+        #print(5)
         self.mesh.calc_neighbour_particle_potentials() # Step 6 and 7
         return util.calc_potential_results(self.particles, plotting, fig, ax, z_range, z_levels, x_range, y_range, cmap)
     

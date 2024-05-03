@@ -11,6 +11,7 @@ class Results():
         self.median = median
         self.fig = fig
         self.ax = ax
+        self.sim_time = None
 
 def calc_potential_results(particles, plotting = True, fig = None, ax = None, z_range = [None, None], z_levels = 1000, x_range = [None, None], y_range = [None, None], cmap = 'RdBu_r', x_label = "x", y_label ="y", z_label = "Potential", title = ""):
     xs = []
@@ -87,7 +88,7 @@ def calc_3D_relative_error_results(particles, reference_particles, centre_positi
 
 
 
-def analyse_2D(xs, ys, potentials, plotting, fig, ax, z_range, z_levels, x_range, y_range, cmap, x_label, y_label, z_label, title):
+def analyse_2D(xs, ys, potentials, plotting = False, fig = None, ax = None, z_range = [None, None], z_levels = 1000, x_range = [None, None], y_range = [None, None], cmap = "jet", x_label = "x", y_label = "y", z_label = "z", title = ""):
     keep_indices = np.invert(np.isinf(potentials) + np.isnan(potentials))
     potentials = np.array(potentials)[keep_indices]
     xs = np.array(xs)[keep_indices]
@@ -102,6 +103,8 @@ def analyse_2D(xs, ys, potentials, plotting, fig, ax, z_range, z_levels, x_range
             levels = np.linspace(x[0], max(potentials), z_levels)
         case _:
             levels = np.linspace(z_range[0], z_range[1], z_levels)
+    
+
     
     if plotting:
         plt.ioff()
@@ -135,9 +138,9 @@ def analyse_2D(xs, ys, potentials, plotting, fig, ax, z_range, z_levels, x_range
             ax.set_title(title)
         plt.ion()
 
-    return Results(np.max(potentials), np.min(potentials), np.mean(potentials), np.median(potentials), fig, ax)
+    return Results(np.max(potentials, initial=-20), np.min(potentials, initial=-20), np.mean(potentials), np.median(potentials), fig, ax)
 
-def analyse_3D(xs, values, plotting, fig, ax, scatter, marker_size, x_range, y_range, x_label, y_label, title, label, format, legend):
+def analyse_3D(xs, values, plotting = False, fig = None, ax = None, scatter = True, marker_size = 1, x_range = [None, None], y_range = [None, None], x_label = "x", y_label = "y", title = "", label = "", format = "", legend = False):
     keep_indices = np.invert(np.isinf(values) + np.isnan(values))
     values = np.array(values)[keep_indices]
     xs = np.array(xs)[keep_indices]
@@ -179,5 +182,5 @@ def analyse_3D(xs, values, plotting, fig, ax, scatter, marker_size, x_range, y_r
             ax.yaxis.set_major_formatter(mtick.FormatStrFormatter('%.1e'))
         plt.ion()
     
-    return Results(np.max(values), np.min(values), np.mean(values), np.median(values), fig, ax)
+    return Results(np.max(values, initial=-20), np.min(values, initial=-20), np.mean(values), np.median(values), fig, ax)
 
