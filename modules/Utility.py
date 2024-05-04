@@ -89,7 +89,7 @@ def calc_3D_relative_error_results(particles, reference_particles, centre_positi
 
 
 def analyse_2D(xs, ys, potentials, plotting = False, fig = None, ax = None, z_range = [None, None], z_levels = 1000, x_range = [None, None], y_range = [None, None], cmap = "jet", x_label = "x", y_label = "y", z_label = "z", title = ""):
-    keep_indices = np.invert(np.isinf(potentials) + np.isnan(potentials))
+    keep_indices = np.invert(np.isinf(potentials) + np.isnan(potentials) + np.isinf(ys) + np.isnan(ys) + np.isinf(xs) + np.isnan(xs))
     potentials = np.array(potentials)[keep_indices]
     xs = np.array(xs)[keep_indices]
     ys = np.array(ys)[keep_indices]
