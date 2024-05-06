@@ -4,7 +4,7 @@ from modules.Particle import Particle
 from modules.Direct_Classes import Analytic
 from modules.FMM_Classes import FMM
 import copy
-from modules.testing import PointTesting
+from modules.PointTesting import PointTesting
 
 # Create particle distribution to be used in all simulations
 #np.random.seed(100)

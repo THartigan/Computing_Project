@@ -14,7 +14,7 @@ class SimBox():
         i=0
         for particle in self.particles:
             i += 1
-            if i % 1000 == 0: print(i)
+            if i % 1000 == 0: print("Progress: particle number " + str(i))
             other_particles = list(self.particles)
             other_particles.remove(particle)
             for other_particle in other_particles:
