@@ -5,7 +5,7 @@ from modules.Particle import Particle
 from modules.Direct_Classes import Direct
 from modules.FMM_Classes import FMM
 from modules.Analytic_Classes import SingleParticle
-from modules.testing import PointTesting
+from modules.PointTesting import PointTesting
 import copy
 import modules.Utility as util
 
